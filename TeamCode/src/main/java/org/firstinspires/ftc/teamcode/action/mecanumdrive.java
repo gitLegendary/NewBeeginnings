@@ -71,17 +71,17 @@ public class mecanumdrive {
          * Control Hub orientation.
          *
          * This assumes:
-         * - The Control Hub is mounted to the side.
-         * - The USB ports face the up on the robot.
-         *
+         * - The Control Hub is mounted flat.
+         * - The USB ports face the front of the robot.
+         * - and yes you are lying to the robot, but it works
          * If your Control Hub is mounted differently, these two directions
          * will need to be changed.
          */
         RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.LEFT;
+                RevHubOrientationOnRobot.LogoFacingDirection.UP;
 
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.DOWN;
+                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
 
         RevHubOrientationOnRobot orientation =
                 new RevHubOrientationOnRobot(logoDirection, usbDirection);
