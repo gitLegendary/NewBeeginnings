@@ -81,7 +81,7 @@ public class mecanumdrive {
                 RevHubOrientationOnRobot.LogoFacingDirection.UP;
 
         RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.BACKWARD;
+                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
 
         RevHubOrientationOnRobot orientation =
                 new RevHubOrientationOnRobot(logoDirection, usbDirection);
@@ -132,7 +132,7 @@ public class mecanumdrive {
          * so invert it here.
          */
 
-        // y = -y;
+         y = -y;
 
         // Get robot heading in radians.
         double botHeading = getHeading();
@@ -143,11 +143,11 @@ public class mecanumdrive {
          * This converts driver commands from robot-relative
          * coordinates into field-relative coordinates.
          */
-        double rotX = x * Math.cos(botHeading)
-                - y * Math.sin(botHeading);
+        double rotX = x * Math.cos(-botHeading)
+                - y * Math.sin(-botHeading);
 
-        double rotY = x * Math.sin(botHeading)
-                + y * Math.cos(botHeading);
+        double rotY = x * Math.sin(-botHeading)
+                + y * Math.cos(-botHeading);
 
         /*
          * Mecanum wheels generally need slightly more power

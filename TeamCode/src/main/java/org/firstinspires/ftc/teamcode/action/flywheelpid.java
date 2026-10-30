@@ -17,7 +17,7 @@ public class flywheelpid {
     private double gearRatio = 3 / 2;
     private double kV = 0.000171, kS = 0.09, kP = 0.0009;
 
-    public double lowVelocity = 2500;
+    public double lowVelocity = 2250;
     public double highVelocity = 3500;
 
     private double targetRpm;
