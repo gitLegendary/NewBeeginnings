@@ -30,8 +30,8 @@ public class Teleop extends OpMode {
     private boolean previousA = false;
 
     // Servo positions
-    private static final double FLOWER_RETRACTED = 0.0;
-    private static final double FLOWER_EXTENDED = 1.0;
+    private static final double FLOWER_RETRACTED = 1.0;
+    private static final double FLOWER_EXTENDED = 0.0;
 
     // Flywheel RPM adjustment
     private static final double RPM_INCREMENT = 100.0;
