@@ -360,5 +360,8 @@ public class mecanumdrive {
                 backRightDrive.getCurrentPosition()
         );
     }
+
+    public void stop() {
+    }
 }
 
