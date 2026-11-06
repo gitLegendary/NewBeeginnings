@@ -25,13 +25,22 @@ public class Teleop extends OpMode {
     // Flower servo
     private Servo flowerServo;
 
-    // Servo toggle state
-    private boolean flowerExtended = false;
+    // Servo position tracking
+    private int flowerPosition = 0;
     private boolean previousA = false;
 
     // Servo positions
     private static final double FLOWER_RETRACTED = 1.0;
+    private static final double FLOWER_EXTENDED_HALF = 0.45;
     private static final double FLOWER_EXTENDED = 0.0;
+    // Launch servo
+    private Servo launchServo;
+
+    // Launch servo positions
+    private static final double LAUNCH_RETRACTED = 0.0;
+    private static final double LAUNCH_EXTENDED = 1.0;
+    private boolean launchExtended = false;
+    private boolean previousB = false;
 
     // Flywheel RPM adjustment
     private static final double RPM_INCREMENT = 100.0;
@@ -54,10 +63,18 @@ public class Teleop extends OpMode {
         // Initialize Flower servo
         flowerServo = hardwareMap.get(
                 Servo.class, "Flower Servo");
+        // Initialize Launch Servo
+        launchServo = hardwareMap.get(
+                Servo.class, "Launch Servo"
+        );
+
+        // Set initial position
+        launchServo.setPosition(LAUNCH_RETRACTED);
+        launchExtended = false;
 
         // Set initial servo position
         flowerServo.setPosition(FLOWER_RETRACTED);
-        flowerExtended = false;
+        boolean flowerExtended = false;
 
         // Initialize intake motors
         intakeLeft.setZeroPowerBehavior(
@@ -84,23 +101,47 @@ public class Teleop extends OpMode {
                 gamepad1.right_stick_x
         );
 
+        // =========================================
         // FLOWER SERVO - GAMEPAD 2 A
+        // =========================================
 
-        boolean currentA = gamepad2.a;
+        if (gamepad2.a && !previousA) {
 
-        if (currentA && !previousA) {
-            flowerExtended = !flowerExtended;
+            flowerPosition++;
 
-            if (flowerExtended) {
-                flowerServo.setPosition(FLOWER_EXTENDED);
-            } else {
+            if (flowerPosition > 2) {
+                flowerPosition = 0;
+            }
+
+            if (flowerPosition == 0) {
                 flowerServo.setPosition(FLOWER_RETRACTED);
+            }
+            else if (flowerPosition == 1) {
+                flowerServo.setPosition(FLOWER_EXTENDED_HALF);
+            }
+            else {
+                flowerServo.setPosition(FLOWER_EXTENDED);
             }
         }
 
-        previousA = currentA;
+        previousA = gamepad2.a;
 
-        previousA = currentA;
+// =========================================
+// LAUNCH SERVO - GAMEPAD 2 B
+// =========================================
+
+        if (gamepad2.b && !previousB) {
+
+            launchExtended = !launchExtended;
+
+            if (launchExtended) {
+                launchServo.setPosition(LAUNCH_EXTENDED);
+            } else {
+                launchServo.setPosition(LAUNCH_RETRACTED);
+            }
+        }
+
+        previousB = gamepad2.b;
 
         // =========================================
         // FLYWHEEL - GAMEPAD 2
@@ -159,11 +200,11 @@ public class Teleop extends OpMode {
         // TELEMETRY
         // =========================================
 
-        telemetry.addData(
-                "Flower Servo",
-                flowerExtended ? "Extended" : "Retracted"
-        );
-
+        telemetry.addData("Flower Position", flowerPosition);
+        telemetry.addData("Flower Servo",
+                flowerPosition == 0 ? "Retracted" :
+                        flowerPosition == 1 ? "Half Extended" :
+                                "Fully Extended");
         telemetry.addData(
                 "Flywheel RPM",
                 "%.0f",
@@ -186,7 +227,10 @@ public class Teleop extends OpMode {
                         ? "Reverse"
                         : "Stopped"
         );
-
+        telemetry.addData(
+                "Launch Servo",
+                launchExtended ? "Extended" : "Retracted"
+        );
         telemetry.update();
     }
 
