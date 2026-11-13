@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.action.mecanumdrive;
 import org.firstinspires.ftc.teamcode.action.flywheelpid;
 
-@TeleOp(name = "Blue_Teleop", group = "TeleOp")
+@TeleOp(name = "Teleop", group = "TeleOp")
 public class Teleop extends OpMode {
 
     // Drivetrain
@@ -21,8 +21,7 @@ public class Teleop extends OpMode {
     // Intake motors
     private DcMotor intakeLeft;
     private DcMotor intakeRight;
-    // Bot heading reset button
-    private boolean lastResetButton = false;
+
     // Flower servo
     private Servo flowerServo;
 
@@ -34,23 +33,24 @@ public class Teleop extends OpMode {
     private static final double FLOWER_RETRACTED = 1.0;
     private static final double FLOWER_EXTENDED_HALF = 0.15;
     private static final double FLOWER_EXTENDED = 0.0;
+
     // Launch servo
     private Servo launchServo;
 
     // Launch servo positions
     private static final double LAUNCH_RETRACTED = 0.25;
     private static final double LAUNCH_EXTENDED = 0.0;
+
     private boolean launchExtended = false;
     private boolean previousB = false;
 
     // Flywheel RPM adjustment
     private static final double RPM_INCREMENT = 100.0;
 
-    
-    @Override
-    public void start() {
-        drive.resetHeading();
-    }
+    // D-pad button tracking
+    private boolean previousDpadUp = false;
+    private boolean previousDpadDown = false;
+
     @Override
     public void init() {
 
@@ -69,18 +69,18 @@ public class Teleop extends OpMode {
         // Initialize Flower servo
         flowerServo = hardwareMap.get(
                 Servo.class, "Flower Servo");
-        // Initialize Launch Servo
+
+        // Initialize Launch servo
         launchServo = hardwareMap.get(
                 Servo.class, "Launch Servo"
         );
 
-        // Set initial position
+        // Set initial launch servo position
         launchServo.setPosition(LAUNCH_RETRACTED);
         launchExtended = false;
 
-        // Set initial servo position
+        // Set initial Flower servo position
         flowerServo.setPosition(FLOWER_RETRACTED);
-        boolean flowerExtended = false;
 
         // Initialize intake motors
         intakeLeft.setZeroPowerBehavior(
@@ -89,10 +89,10 @@ public class Teleop extends OpMode {
                 DcMotor.ZeroPowerBehavior.BRAKE);
 
         telemetry.addLine("TeleOp Initialized");
-        telemetry.addLine("Gamepad 1 A: Toggle Flower Servo");
+        telemetry.addLine("Gamepad 2 A: Toggle Flower Servo");
+        telemetry.addLine("Gamepad 2 B: Toggle Launch Servo");
         telemetry.addLine("Gamepad 2 Bumpers: Control Intakes");
         telemetry.update();
-
     }
 
     @Override
@@ -134,7 +134,7 @@ public class Teleop extends OpMode {
         previousA = gamepad2.a;
 
         // =========================================
-        // LAUNCH SERVO - GAMEPAD 2
+        // LAUNCH SERVO - GAMEPAD 2 B
         // =========================================
 
         if (gamepad2.b && !previousB) {
@@ -147,13 +147,7 @@ public class Teleop extends OpMode {
                 launchServo.setPosition(LAUNCH_RETRACTED);
             }
         }
-        // Press Y on gamepad 1 to reset heading
-        if (gamepad1.y && !lastResetButton) {
-            drive.resetHeading();
-            telemetry.addLine("Heading Reset");
-        }
 
-        lastResetButton = gamepad1.y;
         previousB = gamepad2.b;
 
         // =========================================
@@ -168,14 +162,18 @@ public class Teleop extends OpMode {
                 0
         );
 
-        // Adjust target RPM with the D-pad
-        if (gamepad2.dpad_up) {
+        // Increase target RPM once per D-pad press
+        if (gamepad2.dpad_up && !previousDpadUp) {
             launcher.lowVelocity += RPM_INCREMENT;
         }
 
-        if (gamepad2.dpad_down) {
+        // Decrease target RPM once per D-pad press
+        if (gamepad2.dpad_down && !previousDpadDown) {
             launcher.lowVelocity -= RPM_INCREMENT;
         }
+
+        previousDpadUp = gamepad2.dpad_up;
+        previousDpadDown = gamepad2.dpad_down;
 
         // =========================================
         // INTAKES - GAMEPAD 2
@@ -202,22 +200,19 @@ public class Teleop extends OpMode {
             intakeRight.setPower(0);
         }
 
-
-//        if (gamepad2.right_trigger_pressed){
-//            // Run the flywheel backward at 50 RPM
-//            launcher.setMotorRPM(-50.0f, 0.0f, false, 0);
-//
-//        }
-
         // =========================================
         // TELEMETRY
         // =========================================
 
         telemetry.addData("Flower Position", flowerPosition);
-        telemetry.addData("Flower Servo",
+
+        telemetry.addData(
+                "Flower Servo",
                 flowerPosition == 0 ? "Retracted" :
                         flowerPosition == 1 ? "Half Extended" :
-                                "Fully Extended");
+                                "Fully Extended"
+        );
+
         telemetry.addData(
                 "Flywheel RPM",
                 "%.0f",
@@ -232,18 +227,20 @@ public class Teleop extends OpMode {
 
         telemetry.addData(
                 "Intake",
-                gamepad2.right_bumper
-                        && !gamepad2.left_bumper
-                        ? "Forward"
-                        : gamepad2.left_bumper
+                gamepad2.left_bumper
                         && !gamepad2.right_bumper
+                        ? "Forward"
+                        : gamepad2.right_bumper
+                        && !gamepad2.left_bumper
                         ? "Reverse"
                         : "Stopped"
         );
+
         telemetry.addData(
                 "Launch Servo",
                 launchExtended ? "Extended" : "Retracted"
         );
+
         telemetry.addLine("v.3");
         telemetry.update();
     }

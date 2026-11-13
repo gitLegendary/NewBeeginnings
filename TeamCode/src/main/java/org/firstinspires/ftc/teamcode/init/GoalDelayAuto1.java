@@ -1,3 +1,4 @@
+
 package org.firstinspires.ftc.teamcode.init;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
@@ -8,26 +9,8 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.action.flywheelpid;
 
-@Autonomous(name = "GoalParkAuto1", group = "Autonomous")
+@Autonomous(name = "GoalDelayAuto1", group = "Autonomous")
 public class GoalDelayAuto1 extends LinearOpMode {
-
-    // Drive settings
-    private static final double DRIVE_POWER = 0.30;
-    private static final double STRAFE_POWER = 0.30;
-
-    // Driving times
-    private static final long INITIAL_FORWARD_TIME_MS = 800;
-    private static final long STRAFE_LEFT_TIME_MS = 1700;
-    private static final long FINAL_FORWARD_TIME_MS = 1000;
-
-    // Initial delay while the flywheel spins up
-    private static final double INITIAL_DELAY_SECONDS = 3.0;
-
-    // Flywheel settings
-    private static final double TARGET_RPM = 2750;
-    private static final double RPM_TOLERANCE = 100;
-    private static final long SHOOTING_TIME_MS = 3000;
-    private static final long FLYWHEEL_SPINUP_TIMEOUT_MS = 5000;
 
     // Drive motors
     private DcMotor frontRight;
@@ -39,96 +22,79 @@ public class GoalDelayAuto1 extends LinearOpMode {
     private DcMotor intakeLeft;
     private DcMotor intakeRight;
 
+    // Launch servo
+    private Servo launchServo;
+
     // Flywheel controller
     private flywheelpid launcher;
 
-    private Servo LaunchServo;
+    // Drive settings
+    private static final double DRIVE_POWER = 0.30;
+    private static final double STRAFE_POWER = 0.30;
 
-    // Launch Servo
-    private static final double LAUNCH_RETRACTED = 0.0;
-    private static final double LAUNCH_EXTENDED = 1.0;
+    // Movement times
+    private static final long STRAFE_LEFT_TIME_MS = 2000;
+    private static final long FINAL_FORWARD_TIME_MS = 1000;
 
-    // Servo timing
-    private static final long SERVO_EXTEND_DELAY_MS = 500;
-    private static final long SERVO_RETRACT_DELAY_MS = 500;
+    // Shooting settings
+    private static final double TARGET_RPM = 2750;
+    private static final double RPM_TOLERANCE = 100;
+
+    private static final double INITIAL_DELAY_SECONDS = 3.0;
+    private static final long FLYWHEEL_SPINUP_TIMEOUT_MS = 5000;
+    private static final long SHOOTING_TIME_MS = 3000;
+
+    private static final long SERVO_EXTEND_TIME_MS = 500;
+    private static final long SERVO_RETRACT_TIME_MS = 500;
+
+    private static final double SERVO_RETRACTED = 0.0;
+    private static final double SERVO_EXTENDED = 1.0;
 
     @Override
     public void runOpMode() {
 
-        // ==========================================
-        // INITIALIZE DRIVE MOTORS
-        // ==========================================
-
+        // Initialize drive motors
         frontRight = hardwareMap.get(DcMotor.class, "Front Right");
         frontLeft = hardwareMap.get(DcMotor.class, "Front Left");
         backRight = hardwareMap.get(DcMotor.class, "Back Right");
         backLeft = hardwareMap.get(DcMotor.class, "Back Left");
 
-        // ==========================================
-        // INITIALIZE INTAKE MOTORS
-        // ==========================================
-
+        // Initialize intake motors
         intakeLeft = hardwareMap.get(DcMotor.class, "Intake Left");
         intakeRight = hardwareMap.get(DcMotor.class, "Intake Right");
 
-        // ==========================================
-        // INITIALIZE FLYWHEEL
-        // ==========================================
+        // Initialize servo
+        launchServo = hardwareMap.get(Servo.class, "Launch Servo");
 
+        // Initialize flywheel
         launcher = new flywheelpid();
         launcher.init(this);
         launcher.lowVelocity = TARGET_RPM;
 
-        LaunchServo = hardwareMap.get(
-                Servo.class, "Launch Servo"
-        );
-
-        LaunchServo.setPosition(LAUNCH_RETRACTED);
-
-        // ==========================================
-        // CONFIGURE DRIVE MOTOR DIRECTIONS
-        // ==========================================
-
+        // Motor directions
         frontLeft.setDirection(DcMotor.Direction.REVERSE);
         backLeft.setDirection(DcMotor.Direction.REVERSE);
 
         frontRight.setDirection(DcMotor.Direction.FORWARD);
         backRight.setDirection(DcMotor.Direction.FORWARD);
 
-        // ==========================================
-        // CONFIGURE BRAKING
-        // ==========================================
+        // Brake when motors stop
+        frontRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        frontLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        backLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        frontRight.setZeroPowerBehavior(
-                DcMotor.ZeroPowerBehavior.BRAKE
-        );
-        frontLeft.setZeroPowerBehavior(
-                DcMotor.ZeroPowerBehavior.BRAKE
-        );
-        backRight.setZeroPowerBehavior(
-                DcMotor.ZeroPowerBehavior.BRAKE
-        );
-        backLeft.setZeroPowerBehavior(
-                DcMotor.ZeroPowerBehavior.BRAKE
-        );
+        intakeLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
+        intakeRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        intakeLeft.setZeroPowerBehavior(
-                DcMotor.ZeroPowerBehavior.BRAKE
-        );
-        intakeRight.setZeroPowerBehavior(
-                DcMotor.ZeroPowerBehavior.BRAKE
-        );
+        // Initial states
+        stopAll();
+        launchServo.setPosition(SERVO_RETRACTED);
 
-        // ==========================================
-        // READY TO START
-        // ==========================================
-
-        telemetry.addLine("BlueGoalParkAuto initialized");
+        telemetry.addLine("GoalDelayAuto1 initialized");
         telemetry.addData("Target RPM", TARGET_RPM);
-        telemetry.addLine("Waiting for START");
         telemetry.update();
 
-        // Wait until the driver presses START
         waitForStart();
 
         if (isStopRequested()) {
@@ -136,38 +102,19 @@ public class GoalDelayAuto1 extends LinearOpMode {
             return;
         }
 
-        // ==========================================
-        // INITIAL THREE-SECOND DELAY
-        // Spin up the flywheel while stationary
-        // ==========================================
+        // --------------------------------
+        // SPIN UP FLYWHEEL DURING THE DELAY
+        // --------------------------------
 
         ElapsedTime delayTimer = new ElapsedTime();
 
         while (opModeIsActive()
                 && delayTimer.seconds() < INITIAL_DELAY_SECONDS) {
 
-            // Command the flywheel to spin up
             launcher.setMotorRPM(1.0f, 0.0f, false, 0);
 
-            // Keep the robot and intakes stationary
-            stopDrive();
-            intakeLeft.setPower(0);
-            intakeRight.setPower(0);
-
-            telemetry.addData(
-                    "Status",
-                    "Initial delay: spinning up"
-            );
-            telemetry.addData(
-                    "Elapsed",
-                    "%.1f seconds",
-                    delayTimer.seconds()
-            );
-            telemetry.addData(
-                    "Flywheel RPM",
-                    "%.0f",
-                    launcher.getRPM()
-            );
+            telemetry.addData("Stage", "Initial delay");
+            telemetry.addData("Flywheel RPM", launcher.getRPM());
             telemetry.addData("Target RPM", TARGET_RPM);
             telemetry.update();
 
@@ -179,38 +126,21 @@ public class GoalDelayAuto1 extends LinearOpMode {
             return;
         }
 
-        // ==========================================
-        // CONTINUE SPIN-UP IF NEEDED
-        // ==========================================
+        // --------------------------------
+        // WAIT FOR FLYWHEEL TO REACH TARGET
+        // --------------------------------
 
         ElapsedTime spinupTimer = new ElapsedTime();
 
         while (opModeIsActive()
                 && launcher.getRPM() < TARGET_RPM - RPM_TOLERANCE
-                && spinupTimer.milliseconds()
-                < FLYWHEEL_SPINUP_TIMEOUT_MS) {
+                && spinupTimer.milliseconds() < FLYWHEEL_SPINUP_TIMEOUT_MS) {
 
             launcher.setMotorRPM(1.0f, 0.0f, false, 0);
 
-            stopDrive();
-            intakeLeft.setPower(0);
-            intakeRight.setPower(0);
-
-            telemetry.addData(
-                    "Status",
-                    "Waiting for flywheel RPM"
-            );
-            telemetry.addData(
-                    "Flywheel RPM",
-                    "%.0f",
-                    launcher.getRPM()
-            );
+            telemetry.addData("Stage", "Spinning up");
+            telemetry.addData("Flywheel RPM", launcher.getRPM());
             telemetry.addData("Target RPM", TARGET_RPM);
-            telemetry.addData(
-                    "Spin-up time",
-                    "%.1f seconds",
-                    spinupTimer.seconds()
-            );
             telemetry.update();
 
             idle();
@@ -221,55 +151,37 @@ public class GoalDelayAuto1 extends LinearOpMode {
             return;
         }
 
-        // Warn if the flywheel did not reach its target,
-        // but allow the autonomous to continue.
-        if (launcher.getRPM() < TARGET_RPM - RPM_TOLERANCE) {
+        // --------------------------------
+        // SHOOT
+        // --------------------------------
 
-            telemetry.addLine(
-                    "WARNING: Flywheel did not reach target RPM."
-            );
-            telemetry.addData(
-                    "Actual RPM",
-                    "%.0f",
-                    launcher.getRPM()
-            );
-            telemetry.addLine(
-                    "Continuing autonomous."
-            );
-            telemetry.update();
-        }
-
-        // ==========================================
-        // SHOOT FOR THREE SECONDS
-        // ==========================================
+        launcher.setMotorRPM(1.0f, 0.0f, false, 0);
 
         // Extend launch servo
-        LaunchServo.setPosition(LAUNCH_EXTENDED);
+        launchServo.setPosition(SERVO_EXTENDED);
+        runFlywheelFor(SERVO_EXTEND_TIME_MS);
 
-        // Wait before shooting
-        sleep(SERVO_EXTEND_DELAY_MS);
+        if (!opModeIsActive()) {
+            stopAll();
+            return;
+        }
 
-        // Start shooting
+        // Run intakes while shooting
         intakeLeft.setPower(-1.0);
         intakeRight.setPower(-1.0);
 
-        sleep(SHOOTING_TIME_MS);
+        runFlywheelFor(SHOOTING_TIME_MS);
 
-        // Stop shooting
+        // Stop intakes
         intakeLeft.setPower(0);
         intakeRight.setPower(0);
 
-        // Wait before retracting
-        sleep(SERVO_RETRACT_DELAY_MS);
+        runFlywheelFor(SERVO_RETRACT_TIME_MS);
 
         // Retract launch servo
-        LaunchServo.setPosition(LAUNCH_RETRACTED);
-        // ==========================================
-        // STOP SHOOTING MECHANISMS
-        // ==========================================
+        launchServo.setPosition(SERVO_RETRACTED);
 
-        intakeLeft.setPower(0);
-        intakeRight.setPower(0);
+        // Stop flywheel after shooting
         launcher.setMotorPower(0);
 
         if (!opModeIsActive()) {
@@ -277,83 +189,38 @@ public class GoalDelayAuto1 extends LinearOpMode {
             return;
         }
 
-        // ==========================================
-        // MOVE FORWARD AWAY FROM THE WALL
-        // ==========================================
+        // --------------------------------
+        // STRAFE LEFT FOR 2 SECONDS
+        // --------------------------------
 
-        driveForward(
-                DRIVE_POWER,
-                INITIAL_FORWARD_TIME_MS
-        );
+        strafeLeft(STRAFE_POWER, STRAFE_LEFT_TIME_MS);
 
         if (!opModeIsActive()) {
             stopAll();
             return;
         }
 
-        // ==========================================
-        // STRAFE LEFT
-        // ==========================================
+        // --------------------------------
+        // DRIVE FORWARD FOR 1 SECOND
+        // --------------------------------
 
-        strafeLeft(
-                STRAFE_POWER,
-                STRAFE_LEFT_TIME_MS
-        );
+        driveForward(DRIVE_POWER, FINAL_FORWARD_TIME_MS);
 
-        if (!opModeIsActive()) {
-            stopAll();
-            return;
-        }
-
-        // ==========================================
-        // FINAL FORWARD MOVEMENT
-        // ==========================================
-
-        driveForward(DRIVE_POWER, 1500);
-
-        // ==========================================
+        // --------------------------------
         // END AUTONOMOUS
-        // ==========================================
+        // --------------------------------
 
         stopAll();
 
-        telemetry.addLine("BlueGoalParkAuto complete");
+        telemetry.addLine("GoalDelayAuto1 complete");
         telemetry.update();
     }
 
-    // ==========================================
-    // DRIVE FORWARD
-    // ==========================================
-
-    private void driveForward(
-            double power,
-            long durationMs
-    ) {
-
-        ElapsedTime timer = new ElapsedTime();
-
-        while (opModeIsActive()
-                && timer.milliseconds() < durationMs) {
-
-            frontLeft.setPower(power);
-            frontRight.setPower(power);
-            backLeft.setPower(power);
-            backRight.setPower(power);
-
-            idle();
-        }
-
-        stopDrive();
-    }
-
-    // ==========================================
+    // --------------------------------
     // STRAFE LEFT
-    // ==========================================
+    // --------------------------------
 
-    private void strafeLeft(
-            double power,
-            long durationMs
-    ) {
+    private void strafeLeft(double power, long durationMs) {
 
         ElapsedTime timer = new ElapsedTime();
 
@@ -371,9 +238,52 @@ public class GoalDelayAuto1 extends LinearOpMode {
         stopDrive();
     }
 
-    // ==========================================
+    // --------------------------------
+    // DRIVE FORWARD
+    // --------------------------------
+
+    private void driveForward(double power, long durationMs) {
+
+        ElapsedTime timer = new ElapsedTime();
+
+        while (opModeIsActive()
+                && timer.milliseconds() < durationMs) {
+
+            frontLeft.setPower(power);
+            frontRight.setPower(power);
+            backLeft.setPower(power);
+            backRight.setPower(power);
+
+            idle();
+        }
+
+        stopDrive();
+    }
+
+    // --------------------------------
+    // KEEP FLYWHEEL CONTROL ACTIVE
+    // --------------------------------
+
+    private void runFlywheelFor(long durationMs) {
+
+        ElapsedTime timer = new ElapsedTime();
+
+        while (opModeIsActive()
+                && timer.milliseconds() < durationMs) {
+
+            launcher.setMotorRPM(1.0f, 0.0f, false, 0);
+
+            telemetry.addData("Flywheel RPM", launcher.getRPM());
+            telemetry.addData("Target RPM", TARGET_RPM);
+            telemetry.update();
+
+            idle();
+        }
+    }
+
+    // --------------------------------
     // STOP DRIVE MOTORS
-    // ==========================================
+    // --------------------------------
 
     private void stopDrive() {
 
@@ -383,24 +293,20 @@ public class GoalDelayAuto1 extends LinearOpMode {
         backRight.setPower(0);
     }
 
-    // ==========================================
-    // STOP ALL MOTORS
-    // ==========================================
+    // --------------------------------
+    // STOP EVERYTHING
+    // --------------------------------
 
     private void stopAll() {
 
-        stopDrive();
+        if (frontLeft != null) frontLeft.setPower(0);
+        if (frontRight != null) frontRight.setPower(0);
+        if (backLeft != null) backLeft.setPower(0);
+        if (backRight != null) backRight.setPower(0);
 
-        if (intakeLeft != null) {
-            intakeLeft.setPower(0);
-        }
+        if (intakeLeft != null) intakeLeft.setPower(0);
+        if (intakeRight != null) intakeRight.setPower(0);
 
-        if (intakeRight != null) {
-            intakeRight.setPower(0);
-        }
-
-        if (launcher != null) {
-            launcher.setMotorPower(0);
-        }
+        if (launcher != null) launcher.setMotorPower(0);
     }
 }

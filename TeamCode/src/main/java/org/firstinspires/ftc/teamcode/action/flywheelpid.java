@@ -25,6 +25,7 @@ public class flywheelpid {
 
     // Normal flywheel target RPM
     public double lowVelocity = 2750;
+  //  public double highVelocity = 2750;
 
     // Reverse flywheel target RPM
     private double reverseRPM = 50;

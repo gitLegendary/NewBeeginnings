@@ -7,7 +7,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.action.flywheelpid;
 
-@Autonomous(name = "GoalDelayAuto1", group = "Autonomous")
+@Autonomous(name = "GoalParkAuto1", group = "Autonomous")
 public class GoalParkAuto1 extends LinearOpMode {
 
     // Drive settings
@@ -74,7 +74,7 @@ public class GoalParkAuto1 extends LinearOpMode {
         intakeLeft.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         intakeRight.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        telemetry.addLine("GoalDelayAuto1 initialized");
+        telemetry.addLine("GoalParkAuto1 initialized");
         telemetry.addData("Target RPM", TARGET_RPM);
         telemetry.update();
 
