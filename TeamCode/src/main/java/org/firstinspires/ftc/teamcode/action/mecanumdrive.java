@@ -41,50 +41,40 @@ public class mecanumdrive {
     private double totalSpeed = 1.0;
     private double slowSpeed = 1.0;
 
-    // Heading offset used when the driver resets the field heading
+    // Heading offset
     private double headingOffset = 0.0;
 
     // Joystick deadband
     private static final double DEADZONE = 0.05;
 
 
-    /**22
+    /**
      * Initializes the mecanum drive.
-     *
-     * @param opMode The OpMode creating this drive system.
      */
     public void init(@NonNull OpMode opMode) {
 
         HardwareMap hardwareMap = opMode.hardwareMap;
         telemetry = opMode.telemetry;
 
-        // Get motors using the exact configured names.
-        frontRightDrive = hardwareMap.get(DcMotor.class, "Front Left");
-        frontLeftDrive = hardwareMap.get(DcMotor.class, "Front Right");
-        backRightDrive = hardwareMap.get(DcMotor.class, "Back Left");
-        backLeftDrive = hardwareMap.get(DcMotor.class, "Back Right");
+        // Get motors using their configured names.
+        frontRightDrive = hardwareMap.get(DcMotor.class, "Front Right");
+        frontLeftDrive = hardwareMap.get(DcMotor.class, "Front Left");
+        backRightDrive = hardwareMap.get(DcMotor.class, "Back Right");
+        backLeftDrive = hardwareMap.get(DcMotor.class, "Back Left");
 
         // Get the Control Hub IMU.
         imu = hardwareMap.get(IMU.class, "imu");
 
         /*
-         * Control Hub orientation.
-         *
-         * This assumes:
-         * - The Control Hub is mounted flat.
-         * - The USB ports face the front of the robot.
-         * - and yes you are lying to the robot, but it works
-         * If your Control Hub is mounted differently, these two directions
-         * will need to be changed.
+         * Control Hub orientation:
+         * Logo faces UP.
+         * USB ports face FORWARD.
          */
-        RevHubOrientationOnRobot.LogoFacingDirection logoDirection =
-                RevHubOrientationOnRobot.LogoFacingDirection.UP;
-
-        RevHubOrientationOnRobot.UsbFacingDirection usbDirection =
-                RevHubOrientationOnRobot.UsbFacingDirection.FORWARD;
-
         RevHubOrientationOnRobot orientation =
-                new RevHubOrientationOnRobot(logoDirection, usbDirection);
+                new RevHubOrientationOnRobot(
+                        RevHubOrientationOnRobot.LogoFacingDirection.UP,
+                        RevHubOrientationOnRobot.UsbFacingDirection.FORWARD
+                );
 
         IMU.Parameters parameters = new IMU.Parameters(orientation);
         imu.initialize(parameters);
@@ -96,29 +86,25 @@ public class mecanumdrive {
         frontRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
         backRightDrive.setDirection(DcMotorSimple.Direction.FORWARD);
 
-        // Use encoders for velocity feedback.
+        // Use encoders.
         frontRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         frontLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backRightDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
         backLeftDrive.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
 
-        // Stop quickly when power is set to zero.
+        // Brake when stopped.
         frontRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         frontLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backRightDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
         backLeftDrive.setZeroPowerBehavior(DcMotor.ZeroPowerBehavior.BRAKE);
 
-        // Start with the current robot orientation as field heading zero.
+        // Establish an initial heading reference.
         resetHeading();
     }
 
 
     /**
      * Field-centric mecanum drive.
-     *
-     * @param x   Left/right movement from the left joystick.
-     * @param y   Forward/backward movement from the left joystick.
-     * @param rot Rotation from the right joystick.
      */
     public void setFieldCentricPower(double x, double y, double rot) {
 
@@ -127,65 +113,45 @@ public class mecanumdrive {
         y = applyDeadzone(y);
         rot = applyDeadzone(rot);
 
-        /*
-         * FTC gamepad Y is negative when pushed forward,
-         * so invert it here.
-         */
+        // FTC gamepad Y is negative when pushed forward.
+        y = -y;
 
-         y = -y;
-
-        // Get robot heading in radians.
+        // Get heading relative to the reset reference.
         double botHeading = getHeading();
 
-        /*
-         * Rotate the joystick vector by the robot's heading.
-         *
-         * This converts driver commands from robot-relative
-         * coordinates into field-relative coordinates.
-         */
+        // Rotate joystick input by robot heading.
         double rotX = x * Math.cos(-botHeading)
                 - y * Math.sin(-botHeading);
 
         double rotY = x * Math.sin(-botHeading)
                 + y * Math.cos(-botHeading);
 
-        /*
-         * Mecanum wheels generally need slightly more power
-         * when strafing because of imperfect wheel geometry.
-         */
+        // Strafing correction.
         rotX *= 1.1;
 
-        // Send the field-centric values to the mecanum drive.
+        // Apply motor powers.
         setPower(rotX, rotY, rot);
     }
 
 
     /**
      * Robot-centric mecanum drive.
-     *
-     * This can still be used if field-centric mode is not wanted.
      */
     public void setPower(double x, double y, double rot) {
 
-        /*
-         * Normalize motor powers so none exceed 1.0.
-         */
+        // Normalize motor powers.
         double denominator = Math.max(
                 Math.abs(y) + Math.abs(x) + Math.abs(rot),
                 1.0
         );
 
-        /*
-         * Motor equations for the current motor directions.
-         */
+        // Motor equations.
         frontRightPower = (-x - y - rot) / denominator;
         frontLeftPower = (x - y + rot) / denominator;
         backRightPower = (x - y - rot) / denominator;
         backLeftPower = (-x - y + rot) / denominator;
 
-        /*
-         * Apply overall speed and slow-mode multiplier.
-         */
+        // Apply speed settings.
         frontRightDrive.setPower(
                 frontRightPower * totalSpeed * slowSpeed
         );
@@ -206,8 +172,6 @@ public class mecanumdrive {
 
     /**
      * Enables or disables slow mode.
-     *
-     * @param enable true = slow mode, false = normal speed.
      */
     public void slowMode(boolean enable) {
         slowSpeed = enable ? 0.50 : 1.0;
@@ -215,9 +179,7 @@ public class mecanumdrive {
 
 
     /**
-     * Sets the maximum overall drive speed.
-     *
-     * @param speed Value from 0.0 to 1.0.
+     * Sets maximum drive speed.
      */
     public void setMaxSpeed(double speed) {
         totalSpeed = Math.max(0.0, Math.min(1.0, speed));
@@ -225,24 +187,30 @@ public class mecanumdrive {
 
 
     /**
-     * Returns the robot's current field-relative heading.
-     *
-     * @return Heading in radians.
+     * Returns heading relative to the reset reference.
      */
     public double getHeading() {
 
         double rawHeading = imu.getRobotYawPitchRollAngles()
                 .getYaw(AngleUnit.RADIANS);
 
-        return rawHeading - headingOffset;
+        double heading = rawHeading - headingOffset;
+
+        // Keep heading between -PI and PI.
+        while (heading > Math.PI) {
+            heading -= 2.0 * Math.PI;
+        }
+
+        while (heading < -Math.PI) {
+            heading += 2.0 * Math.PI;
+        }
+
+        return heading;
     }
 
 
     /**
-     * Resets the current robot orientation to field heading zero.
-     *
-     * This does NOT reset the physical IMU. It simply establishes
-     * the robot's current heading as the new field-forward direction.
+     * Sets the current robot orientation to heading zero.
      */
     public void resetHeading() {
 
@@ -252,16 +220,17 @@ public class mecanumdrive {
 
 
     /**
-     * Resets the actual IMU yaw.
+     * Resets the physical IMU yaw.
      */
     public void resetIMU() {
+
         imu.resetYaw();
         headingOffset = 0.0;
     }
 
 
     /**
-     * Switches the wheels to run using encoders.
+     * Switches wheels to RUN_USING_ENCODER.
      */
     public void runUsingEncoder() {
 
@@ -273,7 +242,7 @@ public class mecanumdrive {
 
 
     /**
-     * Switches the wheels to run without encoders.
+     * Switches wheels to RUN_WITHOUT_ENCODER.
      */
     public void runWithoutEncoder() {
 
@@ -285,7 +254,7 @@ public class mecanumdrive {
 
 
     /**
-     * Switches the wheels to RUN_TO_POSITION.
+     * Switches wheels to RUN_TO_POSITION.
      */
     public void runToPosition() {
 
@@ -297,7 +266,7 @@ public class mecanumdrive {
 
 
     /**
-     * Applies a joystick deadzone.
+     * Applies joystick deadzone.
      */
     private double applyDeadzone(double value) {
 
@@ -361,7 +330,8 @@ public class mecanumdrive {
         );
     }
 
+
     public void stop() {
+        setPower(0, 0, 0);
     }
 }
-

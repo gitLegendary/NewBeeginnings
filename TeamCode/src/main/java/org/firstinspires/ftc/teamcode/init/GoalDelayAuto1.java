@@ -3,6 +3,7 @@ package org.firstinspires.ftc.teamcode.init;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import org.firstinspires.ftc.teamcode.action.flywheelpid;
@@ -16,8 +17,8 @@ public class GoalDelayAuto1 extends LinearOpMode {
 
     // Driving times
     private static final long INITIAL_FORWARD_TIME_MS = 800;
-    private static final long STRAFE_LEFT_TIME_MS = 2000;
-    private static final long FINAL_FORWARD_TIME_MS = 3000;
+    private static final long STRAFE_LEFT_TIME_MS = 1700;
+    private static final long FINAL_FORWARD_TIME_MS = 1000;
 
     // Initial delay while the flywheel spins up
     private static final double INITIAL_DELAY_SECONDS = 3.0;
@@ -40,6 +41,16 @@ public class GoalDelayAuto1 extends LinearOpMode {
 
     // Flywheel controller
     private flywheelpid launcher;
+
+    private Servo LaunchServo;
+
+    // Launch Servo
+    private static final double LAUNCH_RETRACTED = 0.0;
+    private static final double LAUNCH_EXTENDED = 1.0;
+
+    // Servo timing
+    private static final long SERVO_EXTEND_DELAY_MS = 500;
+    private static final long SERVO_RETRACT_DELAY_MS = 500;
 
     @Override
     public void runOpMode() {
@@ -67,6 +78,12 @@ public class GoalDelayAuto1 extends LinearOpMode {
         launcher = new flywheelpid();
         launcher.init(this);
         launcher.lowVelocity = TARGET_RPM;
+
+        LaunchServo = hardwareMap.get(
+                Servo.class, "Launch Servo"
+        );
+
+        LaunchServo.setPosition(LAUNCH_RETRACTED);
 
         // ==========================================
         // CONFIGURE DRIVE MOTOR DIRECTIONS
@@ -205,7 +222,7 @@ public class GoalDelayAuto1 extends LinearOpMode {
         }
 
         // Warn if the flywheel did not reach its target,
-// but allow the autonomous to continue.
+        // but allow the autonomous to continue.
         if (launcher.getRPM() < TARGET_RPM - RPM_TOLERANCE) {
 
             telemetry.addLine(
@@ -226,37 +243,27 @@ public class GoalDelayAuto1 extends LinearOpMode {
         // SHOOT FOR THREE SECONDS
         // ==========================================
 
-        ElapsedTime shootingTimer = new ElapsedTime();
+        // Extend launch servo
+        LaunchServo.setPosition(LAUNCH_EXTENDED);
 
-        while (opModeIsActive()
-                && shootingTimer.milliseconds() < SHOOTING_TIME_MS) {
+        // Wait before shooting
+        sleep(SERVO_EXTEND_DELAY_MS);
 
-            // Maintain flywheel command
-            launcher.setMotorRPM(1.0f, 0.0f, false, 0);
+        // Start shooting
+        intakeLeft.setPower(-1.0);
+        intakeRight.setPower(-1.0);
 
-            // Feed game pieces into the launcher
-            intakeLeft.setPower(-1.0);
-            intakeRight.setPower(-1.0);
+        sleep(SHOOTING_TIME_MS);
 
-            // Keep the drive motors stopped
-            stopDrive();
+        // Stop shooting
+        intakeLeft.setPower(0);
+        intakeRight.setPower(0);
 
-            telemetry.addData("Status", "Shooting");
-            telemetry.addData(
-                    "Flywheel RPM",
-                    "%.0f",
-                    launcher.getRPM()
-            );
-            telemetry.addData(
-                    "Shooting time",
-                    "%.1f seconds",
-                    shootingTimer.seconds()
-            );
-            telemetry.update();
+        // Wait before retracting
+        sleep(SERVO_RETRACT_DELAY_MS);
 
-            idle();
-        }
-
+        // Retract launch servo
+        LaunchServo.setPosition(LAUNCH_RETRACTED);
         // ==========================================
         // STOP SHOOTING MECHANISMS
         // ==========================================
@@ -302,10 +309,7 @@ public class GoalDelayAuto1 extends LinearOpMode {
         // FINAL FORWARD MOVEMENT
         // ==========================================
 
-        driveForward(
-                DRIVE_POWER,
-                FINAL_FORWARD_TIME_MS
-        );
+        driveForward(DRIVE_POWER, 1500);
 
         // ==========================================
         // END AUTONOMOUS

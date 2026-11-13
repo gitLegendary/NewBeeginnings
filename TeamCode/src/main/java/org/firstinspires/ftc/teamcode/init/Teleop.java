@@ -1,5 +1,5 @@
 
-        package org.firstinspires.ftc.teamcode.init;
+package org.firstinspires.ftc.teamcode.init;
 
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
@@ -9,7 +9,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import org.firstinspires.ftc.teamcode.action.mecanumdrive;
 import org.firstinspires.ftc.teamcode.action.flywheelpid;
 
-@TeleOp(name = "Teleop", group = "TeleOp")
+@TeleOp(name = "Blue_Teleop", group = "TeleOp")
 public class Teleop extends OpMode {
 
     // Drivetrain
@@ -21,7 +21,8 @@ public class Teleop extends OpMode {
     // Intake motors
     private DcMotor intakeLeft;
     private DcMotor intakeRight;
-
+    // Bot heading reset button
+    private boolean lastResetButton = false;
     // Flower servo
     private Servo flowerServo;
 
@@ -31,20 +32,25 @@ public class Teleop extends OpMode {
 
     // Servo positions
     private static final double FLOWER_RETRACTED = 1.0;
-    private static final double FLOWER_EXTENDED_HALF = 0.45;
+    private static final double FLOWER_EXTENDED_HALF = 0.15;
     private static final double FLOWER_EXTENDED = 0.0;
     // Launch servo
     private Servo launchServo;
 
     // Launch servo positions
-    private static final double LAUNCH_RETRACTED = 0.0;
-    private static final double LAUNCH_EXTENDED = 1.0;
+    private static final double LAUNCH_RETRACTED = 0.25;
+    private static final double LAUNCH_EXTENDED = 0.0;
     private boolean launchExtended = false;
     private boolean previousB = false;
 
     // Flywheel RPM adjustment
     private static final double RPM_INCREMENT = 100.0;
 
+    
+    @Override
+    public void start() {
+        drive.resetHeading();
+    }
     @Override
     public void init() {
 
@@ -86,6 +92,7 @@ public class Teleop extends OpMode {
         telemetry.addLine("Gamepad 1 A: Toggle Flower Servo");
         telemetry.addLine("Gamepad 2 Bumpers: Control Intakes");
         telemetry.update();
+
     }
 
     @Override
@@ -126,9 +133,9 @@ public class Teleop extends OpMode {
 
         previousA = gamepad2.a;
 
-// =========================================
-// LAUNCH SERVO - GAMEPAD 2 B
-// =========================================
+        // =========================================
+        // LAUNCH SERVO - GAMEPAD 2
+        // =========================================
 
         if (gamepad2.b && !previousB) {
 
@@ -140,7 +147,13 @@ public class Teleop extends OpMode {
                 launchServo.setPosition(LAUNCH_RETRACTED);
             }
         }
+        // Press Y on gamepad 1 to reset heading
+        if (gamepad1.y && !lastResetButton) {
+            drive.resetHeading();
+            telemetry.addLine("Heading Reset");
+        }
 
+        lastResetButton = gamepad1.y;
         previousB = gamepad2.b;
 
         // =========================================
@@ -168,15 +181,15 @@ public class Teleop extends OpMode {
         // INTAKES - GAMEPAD 2
         // =========================================
 
-        if (gamepad2.right_bumper
-                && !gamepad2.left_bumper) {
+        if (gamepad2.left_bumper
+                && !gamepad2.right_bumper) {
 
             // Intake forward
             intakeLeft.setPower(1.0);
             intakeRight.setPower(1.0);
 
-        } else if (gamepad2.left_bumper
-                && !gamepad2.right_bumper) {
+        } else if (gamepad2.right_bumper
+                && !gamepad2.left_bumper) {
 
             // Intake reverse
             intakeLeft.setPower(-1.0);
@@ -190,11 +203,11 @@ public class Teleop extends OpMode {
         }
 
 
-        if (gamepad2.right_trigger_pressed){
-            // Run the flywheel backward at 50 RPM
-            launcher.setMotorRPM(-50.0f, 0.0f, false, 0);
-
-        }
+//        if (gamepad2.right_trigger_pressed){
+//            // Run the flywheel backward at 50 RPM
+//            launcher.setMotorRPM(-50.0f, 0.0f, false, 0);
+//
+//        }
 
         // =========================================
         // TELEMETRY
@@ -231,6 +244,7 @@ public class Teleop extends OpMode {
                 "Launch Servo",
                 launchExtended ? "Extended" : "Retracted"
         );
+        telemetry.addLine("v.3");
         telemetry.update();
     }
 
