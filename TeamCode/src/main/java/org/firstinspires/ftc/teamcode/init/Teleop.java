@@ -184,7 +184,7 @@ public class Teleop extends OpMode {
 
             // Intake forward
             intakeLeft.setPower(1.0);
-            intakeRight.setPower(1.0);
+            intakeRight.setPower(0.95);
 
         } else if (gamepad2.right_bumper
                 && !gamepad2.left_bumper) {
